@@ -10,13 +10,13 @@ Authenticated gateway for FTL2 web applications. Handles Google OAuth login and 
 Browser ── HTTPS ──────→ │                             │
                          │  /login   (Google OAuth)     │
                          │  /        (app launcher)     │
-                         │  /ws/ai-loop  ─────────────→ │──→ textual-serve :8001
-                         │  /ws/htop     ─────────────→ │──→ textual-serve :8002
+                         │  /app/ai-loop ─────────────→ │──→ textual-serve localhost:8001
+                         │  /app/htop    ─────────────→ │──→ textual-serve 100.64.0.1:8002
                          │                             │
                          └─────────────────────────────┘
 ```
 
-Each textual-serve instance runs on localhost. The gateway handles authentication and WebSocket proxying. Apps run independently — the gateway just connects authenticated users to them.
+Backends can run on localhost or on remote hosts (e.g., via Tailscale). The gateway handles authentication and proxying. Apps run independently — the gateway just connects authenticated users to them.
 
 ## Prerequisites
 
@@ -50,8 +50,8 @@ export SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 export ALLOWED_EMAILS=ben@example.com
 export ALLOWED_DOMAIN=example.com
 
-# Required — app backends (name:port pairs)
-export APPS=ai-loop:8001,htop:8002
+# Required — app backends (name:port for localhost, name:host:port for remote)
+export APPS=ai-loop:8001,htop:100.64.0.1:8002
 ```
 
 Start textual-serve backends, then the gateway:
@@ -78,7 +78,7 @@ All configuration is via environment variables:
 | `SECRET_KEY` | Yes | Random string for signing session cookies |
 | `ALLOWED_EMAILS` | One of these | Comma-separated list of allowed email addresses |
 | `ALLOWED_DOMAIN` | One of these | Allow all emails from this domain |
-| `APPS` | Yes | App backends as `name:port` pairs (e.g., `ai-loop:8001,htop:8002`) |
+| `APPS` | Yes | App backends: `name:port` (localhost) or `name:host:port` (remote) |
 
 See `.env.example` for a template.
 
@@ -89,8 +89,8 @@ See `.env.example` for a template.
 3. Gateway checks the email against `ALLOWED_EMAILS` / `ALLOWED_DOMAIN`
 4. If allowed, stores the email in a signed session cookie and redirects to `/`
 5. Landing page shows available apps as clickable links
-6. Clicking an app opens a WebSocket connection to `/ws/{app_name}`
-7. Gateway authenticates the WebSocket, then proxies bidirectionally to the textual-serve backend on localhost
+6. Clicking an app loads the textual-serve page via `/app/{app_name}` (HTML proxied with URLs rewritten)
+7. The browser opens a WebSocket to `/app/{app_name}/ws`, which the gateway proxies to the backend
 
 ## CLI Options
 
