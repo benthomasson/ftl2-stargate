@@ -1,6 +1,7 @@
 import asyncio
 
 from fastapi import WebSocket
+import httpx
 import websockets
 
 
@@ -37,3 +38,34 @@ async def proxy_websocket(client_ws: WebSocket, backend_port: int):
         )
         for task in pending:
             task.cancel()
+
+
+async def proxy_http(backend_port: int, path: str, gateway_base: str, app_name: str):
+    """Proxy an HTTP request to a textual-serve backend, rewriting URLs."""
+    backend_url = f"http://localhost:{backend_port}{path}"
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(backend_url)
+
+    content_type = resp.headers.get("content-type", "")
+    headers = {}
+
+    if "text/html" in content_type:
+        # Rewrite the WebSocket URL to go through our gateway
+        body = resp.text
+        body = body.replace(
+            f"ws://localhost:{backend_port}/ws",
+            f"ws://{gateway_base}/app/{app_name}/ws",
+        )
+        # Rewrite static asset URLs to go through our gateway
+        body = body.replace(
+            f"http://localhost:{backend_port}/",
+            f"http://{gateway_base}/app/{app_name}/",
+        )
+        return body, resp.status_code, "text/html"
+
+    # For non-HTML (CSS, JS, images), return raw bytes
+    for header in ("content-type",):
+        if header in resp.headers:
+            headers[header] = resp.headers[header]
+
+    return resp.content, resp.status_code, content_type
