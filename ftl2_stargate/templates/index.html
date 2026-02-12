@@ -56,11 +56,11 @@
 
     {% if apps %}
     <ul class="apps">
-        {% for name, port in apps.items() %}
+        {% for name, backend in apps.items() %}
         <li>
             <a href="/app/{{ name }}">
                 {{ name }}
-                <span class="port">:{{ port }}</span>
+                <span class="port">{{ backend }}</span>
             </a>
         </li>
         {% endfor %}

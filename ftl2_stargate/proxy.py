@@ -5,9 +5,9 @@ import httpx
 import websockets
 
 
-async def proxy_websocket(client_ws: WebSocket, backend_port: int):
+async def proxy_websocket(client_ws: WebSocket, backend: str):
     """Proxy WebSocket messages between the browser and a textual-serve backend."""
-    backend_url = f"ws://localhost:{backend_port}/ws"
+    backend_url = f"ws://{backend}/ws"
 
     async with websockets.connect(backend_url, ping_interval=None, ping_timeout=None) as backend_ws:
         async def client_to_backend():
@@ -40,9 +40,9 @@ async def proxy_websocket(client_ws: WebSocket, backend_port: int):
             task.cancel()
 
 
-async def proxy_http(backend_port: int, path: str, gateway_base: str, app_name: str):
+async def proxy_http(backend: str, path: str, gateway_base: str, app_name: str):
     """Proxy an HTTP request to a textual-serve backend, rewriting URLs."""
-    backend_url = f"http://localhost:{backend_port}{path}"
+    backend_url = f"http://{backend}{path}"
     async with httpx.AsyncClient() as client:
         resp = await client.get(backend_url)
 
@@ -53,12 +53,12 @@ async def proxy_http(backend_port: int, path: str, gateway_base: str, app_name: 
         # Rewrite the WebSocket URL to go through our gateway
         body = resp.text
         body = body.replace(
-            f"ws://localhost:{backend_port}/ws",
+            f"ws://{backend}/ws",
             f"ws://{gateway_base}/app/{app_name}/ws",
         )
         # Rewrite static asset URLs to go through our gateway
         body = body.replace(
-            f"http://localhost:{backend_port}/",
+            f"http://{backend}/",
             f"http://{gateway_base}/app/{app_name}/",
         )
         # Auto-focus the xterm.js terminal so keystrokes work immediately

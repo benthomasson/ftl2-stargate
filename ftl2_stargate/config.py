@@ -33,10 +33,13 @@ def get_allowed_domain() -> str:
     return os.environ.get("ALLOWED_DOMAIN", "").strip().lower()
 
 
-def get_apps() -> dict[str, int]:
-    """Parse APPS env var into {name: port} mapping.
+def get_apps() -> dict[str, str]:
+    """Parse APPS env var into {name: "host:port"} mapping.
 
-    Format: name:port,name:port (e.g. "ai-loop:8001,htop:8002")
+    Formats:
+        name:port                → localhost:port
+        name:host:port           → host:port
+        ai-loop:8001,htop:100.64.0.1:8002
     """
     val = os.environ.get("APPS", "")
     if not val:
@@ -46,10 +49,17 @@ def get_apps() -> dict[str, int]:
         entry = entry.strip()
         if not entry:
             continue
-        name, _, port = entry.partition(":")
-        if not name or not port:
-            raise ValueError(f"Invalid APPS entry: {entry!r} (expected name:port)")
-        apps[name.strip()] = int(port.strip())
+        parts = entry.split(":")
+        if len(parts) == 2:
+            # name:port → localhost:port
+            name, port = parts
+            apps[name.strip()] = f"localhost:{port.strip()}"
+        elif len(parts) == 3:
+            # name:host:port → host:port
+            name, host, port = parts
+            apps[name.strip()] = f"{host.strip()}:{port.strip()}"
+        else:
+            raise ValueError(f"Invalid APPS entry: {entry!r} (expected name:port or name:host:port)")
     return apps
 
 
