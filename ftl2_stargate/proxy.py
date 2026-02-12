@@ -61,6 +61,19 @@ async def proxy_http(backend_port: int, path: str, gateway_base: str, app_name: 
             f"http://localhost:{backend_port}/",
             f"http://{gateway_base}/app/{app_name}/",
         )
+        # Auto-focus the xterm.js terminal so keystrokes work immediately
+        focus_script = (
+            '<script>'
+            'document.addEventListener("DOMContentLoaded",()=>{'
+            'let t=document.getElementById("terminal");'
+            'if(t){new MutationObserver((m,o)=>{'
+            'let c=t.querySelector(".xterm-helper-textarea");'
+            'if(c){c.focus();o.disconnect()}'
+            '}).observe(t,{childList:true,subtree:true})}'
+            '});'
+            '</script>'
+        )
+        body = body.replace("</head>", focus_script + "</head>")
         return body, resp.status_code, "text/html"
 
     # For non-HTML (CSS, JS, images), return raw bytes
