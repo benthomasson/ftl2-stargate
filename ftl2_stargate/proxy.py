@@ -9,7 +9,7 @@ async def proxy_websocket(client_ws: WebSocket, backend_port: int):
     """Proxy WebSocket messages between the browser and a textual-serve backend."""
     backend_url = f"ws://localhost:{backend_port}/ws"
 
-    async with websockets.connect(backend_url) as backend_ws:
+    async with websockets.connect(backend_url, ping_interval=None, ping_timeout=None) as backend_ws:
         async def client_to_backend():
             try:
                 while True:

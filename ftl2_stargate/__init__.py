@@ -10,4 +10,11 @@ def cli():
 
     import uvicorn
 
-    uvicorn.run("ftl2_stargate.app:app", host=args.host, port=args.port, reload=args.reload)
+    uvicorn.run(
+        "ftl2_stargate.app:app",
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+        ws_ping_interval=None,
+        ws_ping_timeout=None,
+    )
