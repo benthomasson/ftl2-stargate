@@ -62,7 +62,8 @@ async def proxy_http(backend: str, path: str, gateway_base: str, app_name: str):
             f"http://{gateway_base}/app/{app_name}/",
         )
         # Auto-focus the xterm.js terminal so keystrokes work immediately
-        focus_script = (
+        # and intercept the browser back button to send Escape to the terminal
+        inject_script = (
             '<script>'
             'document.addEventListener("DOMContentLoaded",()=>{'
             'let t=document.getElementById("terminal");'
@@ -71,9 +72,19 @@ async def proxy_http(backend: str, path: str, gateway_base: str, app_name: str):
             'if(c){c.focus();o.disconnect()}'
             '}).observe(t,{childList:true,subtree:true})}'
             '});'
+            'history.pushState({app:true},"");'
+            'window.addEventListener("popstate",()=>{'
+            'history.pushState({app:true},"");'
+            'let c=document.querySelector(".xterm-helper-textarea");'
+            'if(c){'
+            'c.focus();'
+            'c.dispatchEvent(new KeyboardEvent("keydown",'
+            '{key:"Escape",code:"Escape",keyCode:27,bubbles:true}));'
+            '}'
+            '});'
             '</script>'
         )
-        body = body.replace("</head>", focus_script + "</head>")
+        body = body.replace("</head>", inject_script + "</head>")
         return body, resp.status_code, "text/html"
 
     # For non-HTML (CSS, JS, images), return raw bytes
