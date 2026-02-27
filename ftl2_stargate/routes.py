@@ -39,8 +39,9 @@ async def app_proxy(request: Request, app_name: str, path: str = ""):
 
     backend_path = f"/{path}" if path else "/"
     gateway_base = request.headers.get("host", "localhost:8000")
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
     body, status_code, content_type = await proxy_http(
-        apps[app_name], backend_path, gateway_base, app_name
+        apps[app_name], backend_path, gateway_base, app_name, scheme=scheme
     )
     return Response(content=body, status_code=status_code, media_type=content_type)
 

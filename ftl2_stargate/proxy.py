@@ -40,8 +40,9 @@ async def proxy_websocket(client_ws: WebSocket, backend: str):
             task.cancel()
 
 
-async def proxy_http(backend: str, path: str, gateway_base: str, app_name: str):
+async def proxy_http(backend: str, path: str, gateway_base: str, app_name: str, scheme: str = "http"):
     """Proxy an HTTP request to a textual-serve backend, rewriting URLs."""
+    ws_scheme = "wss" if scheme == "https" else "ws"
     backend_url = f"http://{backend}{path}"
     async with httpx.AsyncClient() as client:
         resp = await client.get(backend_url)
@@ -54,12 +55,12 @@ async def proxy_http(backend: str, path: str, gateway_base: str, app_name: str):
         body = resp.text
         body = body.replace(
             f"ws://{backend}/ws",
-            f"ws://{gateway_base}/app/{app_name}/ws",
+            f"{ws_scheme}://{gateway_base}/app/{app_name}/ws",
         )
         # Rewrite static asset URLs to go through our gateway
         body = body.replace(
             f"http://{backend}/",
-            f"http://{gateway_base}/app/{app_name}/",
+            f"{scheme}://{gateway_base}/app/{app_name}/",
         )
         # Auto-focus the xterm.js terminal so keystrokes work immediately
         # and intercept the browser back button to send Escape to the terminal
